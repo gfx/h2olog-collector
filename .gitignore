@@ -1,0 +1,6 @@
+h2olog-collector
+*.json
+statik/
+
+# example input
+rows.txt
