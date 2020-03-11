@@ -53,7 +53,7 @@ func clientOption() option.ClientOption {
 		log.Fatal(err)
 	}
 
-	r, err := statikFs.Open("authn.json")
+	r, err := statikFs.Open("/authn.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,9 +68,9 @@ func clientOption() option.ClientOption {
 }
 
 func main() {
-	if len(os.Args) <= 2 {
+	if len(os.Args) < 2 {
 		command := filepath.Base(os.Args[0])
-		fmt.Println("usage: %s projectID.datasetID.tableID\n", command)
+		fmt.Printf("usage: %s projectID.datasetID.tableID\n", command)
 		os.Exit(0)
 	}
 	parts := strings.Split(os.Args[1], ".")

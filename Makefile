@@ -3,10 +3,10 @@ CURRENT_REVISION = $(shell git rev-parse --short HEAD)
 BUILD_LDFLAGS = "-s -w -X main.revision=$(CURRENT_REVISION)"
 
 
-all: deps statik/statik.go h2olog-collector
+all: deps h2olog-collector
 .PHONEY: all
 
-deps:
+deps: statik/statik.go
 	go get -d
 	go mod tidy
 .PHONEY: deps
