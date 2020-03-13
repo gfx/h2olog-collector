@@ -18,6 +18,10 @@ statik/statik.go:
 h2olog-collector: statik/statik.go main.go
 	go build -v
 
+type.go:
+	extract_h2olog_schema.pl 'h2olog.quic' ~/ghq/github.com/toru/h2olog/h2olog > type.go
+	go fmt
+
 clean:
 	rm -rf h2olog-collector statik
 .PHONEY: clean
