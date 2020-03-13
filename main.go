@@ -88,7 +88,7 @@ func sleepForever() {
 	select {}
 }
 
-func writeEvents(ctx context.Context, in chan quicEvent, inserter *bigquery.Inserter, id int) {
+func insertEvents(ctx context.Context, in chan quicEvent, inserter *bigquery.Inserter, id int) {
 	rows := make([]quicEvent, 0)
 	ticker := time.NewTicker(tickDuration)
 	for range ticker.C {
@@ -106,7 +106,6 @@ func writeEvents(ctx context.Context, in chan quicEvent, inserter *bigquery.Inse
 			rows = make([]quicEvent, 0)
 		}
 	}
-
 }
 
 func main() {
@@ -137,7 +136,7 @@ func main() {
 
 	seq := make([]int, numWorkers)
 	for i := range seq {
-		go writeEvents(ctx, ch, inserter, i+1)
+		go insertEvents(ctx, ch, inserter, i+1)
 	}
 
 	readJSONLine(ch, os.Stdin)
