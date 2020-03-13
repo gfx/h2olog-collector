@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -67,6 +68,18 @@ func clientOption() option.ClientOption {
 	return option.WithCredentialsJSON(json)
 }
 
+func readJSONLine(out chan quicEvent, reader io.Reader) {
+	scanner := bufio.NewScanner(reader)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		var row quicEvent
+		json.Unmarshal([]byte(line), &row)
+
+		out <- row
+	}
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		command := filepath.Base(os.Args[0])
@@ -93,25 +106,30 @@ func main() {
 	inserter.IgnoreUnknownValues = true
 	inserter.SkipInvalidRows = false
 
-	scanner := bufio.NewScanner(os.Stdin)
-	rows := make([]quicEvent, size)
-	i := 0
-	for scanner.Scan() {
-		line := scanner.Text()
-		log.Println(line)
+	ch := make(chan quicEvent, size)
+	defer close(ch)
+	go readJSONLine(ch, os.Stdin)
 
-		var row quicEvent
-		json.Unmarshal([]byte(line), &row)
-		rows[i] = row
-		i++
+	rows := make([]quicEvent, 0)
+	tickDuration := 100 * time.Millisecond
+	t := time.Now()
 
-		if i >= size {
-			i = 0
+	ticker := time.NewTicker(tickDuration)
+	for range ticker.C {
+		for len(ch) > 0 {
+			rows = append(rows, <-ch)
+		}
+
+		now := time.Now()
+		if len(rows) > 0 && now.After(t.Add(tickDuration)) {
+			log.Printf("Insert rows (size=%d)", len(rows))
 
 			err := inserter.Put(ctx, rows)
 			if err != nil {
 				log.Fatal(err)
 			}
+			rows = make([]quicEvent, 0)
+			t = now
 		}
 	}
 }
