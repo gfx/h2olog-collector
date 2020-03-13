@@ -21,6 +21,10 @@ import (
 	_ "github.com/gfx/h2olog-collector/statik"
 )
 
+const numWorkers = 4
+const chanBufferSize = 5000
+const tickDuration = 10 * time.Millisecond
+
 func (event quicEvent) Save() (row map[string]bigquery.Value, insertID string, err error) {
 	v := reflect.Indirect(reflect.ValueOf(event))
 	t := v.Type()
@@ -80,6 +84,31 @@ func readJSONLine(out chan quicEvent, reader io.Reader) {
 	}
 }
 
+func sleepForever() {
+	select {}
+}
+
+func writeEvents(ctx context.Context, in chan quicEvent, inserter *bigquery.Inserter, id int) {
+	rows := make([]quicEvent, 0)
+	ticker := time.NewTicker(tickDuration)
+	for range ticker.C {
+		for len(in) > 0 {
+			rows = append(rows, <-in)
+		}
+
+		if len(rows) > 0 {
+			log.Printf("[%d] Insert rows (size=%d)", id, len(rows))
+
+			err := inserter.Put(ctx, rows)
+			if err != nil {
+				log.Fatal(err)
+			}
+			rows = make([]quicEvent, 0)
+		}
+	}
+
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		command := filepath.Base(os.Args[0])
@@ -90,9 +119,6 @@ func main() {
 	projectID := parts[0]
 	datasetID := parts[1]
 	tableID := parts[2]
-
-	// size of rows to insert at once
-	size := 50
 
 	ctx := context.Background()
 
@@ -106,30 +132,14 @@ func main() {
 	inserter.IgnoreUnknownValues = true
 	inserter.SkipInvalidRows = false
 
-	ch := make(chan quicEvent, size)
+	ch := make(chan quicEvent, chanBufferSize)
 	defer close(ch)
-	go readJSONLine(ch, os.Stdin)
 
-	rows := make([]quicEvent, 0)
-	tickDuration := 100 * time.Millisecond
-	t := time.Now()
-
-	ticker := time.NewTicker(tickDuration)
-	for range ticker.C {
-		for len(ch) > 0 {
-			rows = append(rows, <-ch)
-		}
-
-		now := time.Now()
-		if len(rows) > 0 && now.After(t.Add(tickDuration)) {
-			log.Printf("Insert rows (size=%d)", len(rows))
-
-			err := inserter.Put(ctx, rows)
-			if err != nil {
-				log.Fatal(err)
-			}
-			rows = make([]quicEvent, 0)
-			t = now
-		}
+	seq := make([]int, numWorkers)
+	for i := range seq {
+		go writeEvents(ctx, ch, inserter, i+1)
 	}
+
+	readJSONLine(ch, os.Stdin)
+	sleepForever()
 }
