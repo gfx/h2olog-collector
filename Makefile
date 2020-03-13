@@ -6,6 +6,10 @@ BUILD_LDFLAGS = "-s -w -X main.revision=$(CURRENT_REVISION)"
 all: deps h2olog-collector
 .PHONEY: all
 
+crossbuild: deps
+	GOOS=linux GOARCH=amd64 go build -o release/h2olog-collector
+.PHONEY: crossbuild
+
 deps: statik/statik.go
 	go get -d
 	go mod tidy
