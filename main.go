@@ -78,6 +78,9 @@ func main() {
 	datasetID := parts[1]
 	tableID := parts[2]
 
+	// size of rows to insert at once
+	size := 50
+
 	ctx := context.Background()
 
 	client, err := bigquery.NewClient(ctx, projectID, clientOption())
@@ -88,18 +91,27 @@ func main() {
 
 	inserter := client.Dataset(datasetID).Table(tableID).Inserter()
 	inserter.IgnoreUnknownValues = true
-	inserter.SkipInvalidRows = true
+	inserter.SkipInvalidRows = false
 
 	scanner := bufio.NewScanner(os.Stdin)
+	rows := make([]quicEvent, size)
+	i := 0
 	for scanner.Scan() {
 		line := scanner.Text()
 		log.Println(line)
 
 		var row quicEvent
 		json.Unmarshal([]byte(line), &row)
-		err := inserter.Put(ctx, row)
-		if err != nil {
-			log.Fatal(err)
+		rows[i] = row
+		i++
+
+		if i >= size {
+			i = 0
+
+			err := inserter.Put(ctx, rows)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }
