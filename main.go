@@ -23,7 +23,7 @@ import (
 
 const numWorkers = 4
 const chanBufferSize = 5000
-const tickDuration = 10 * time.Millisecond
+const tickDuration = 100 * time.Millisecond
 
 func (event quicEvent) Save() (row map[string]bigquery.Value, insertID string, err error) {
 	v := reflect.Indirect(reflect.ValueOf(event))
