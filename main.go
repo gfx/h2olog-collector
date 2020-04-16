@@ -21,7 +21,7 @@ import (
 	_ "github.com/gfx/h2olog-collector/statik"
 )
 
-const numWorkers = 4
+const numWorkers = 16
 const chanBufferSize = 5000
 const tickDuration = 100 * time.Millisecond
 
