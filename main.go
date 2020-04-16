@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"time"
 
@@ -25,30 +25,21 @@ const numWorkers = 4
 const chanBufferSize = 5000
 const tickDuration = 100 * time.Millisecond
 
-func (event quicEvent) Save() (row map[string]bigquery.Value, insertID string, err error) {
-	v := reflect.Indirect(reflect.ValueOf(event))
-	t := v.Type()
+var dryRun bool
 
-	row = make(map[string]bigquery.Value)
+type quicEvent = map[string]bigquery.Value
 
-	for i := 0; i < v.NumField(); i++ {
-		val := v.Field(i).Interface()
-		name := t.Field(i).Tag.Get("json")
-		if name == "at" {
-			row[name] = millisToTime(val.(int64))
-		} else {
-			row[name] = val
-		}
-	}
-	return row, insertID, err
+type valueSaver struct {
+	row quicEvent
 }
 
-//const iso8601Milli = "2006-01-02T15:04:05.000Z"
+func (vs valueSaver) Save() (row map[string]bigquery.Value, insertID string, err error) {
+	return vs.row, insertID, err
+}
 
 func millisToTime(millis int64) time.Time {
 	sec := millis / 1000
 	nsec := (millis - (sec * 1000)) * 1000000
-
 	return time.Unix(sec, nsec).UTC()
 }
 
@@ -72,7 +63,7 @@ func clientOption() option.ClientOption {
 	return option.WithCredentialsJSON(json)
 }
 
-func readJSONLine(out chan quicEvent, reader io.Reader) {
+func readJSONLine(out chan valueSaver, reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
 
 	for scanner.Scan() {
@@ -80,7 +71,14 @@ func readJSONLine(out chan quicEvent, reader io.Reader) {
 		var row quicEvent
 		json.Unmarshal([]byte(line), &row)
 
-		out <- row
+		time := row["time"] // interface{}
+		if iv, ok := time.(int64); ok {
+			row["time"] = millisToTime(iv)
+		} else {
+			row["time"] = millisToTime(int64(time.(float64)))
+		}
+
+		out <- valueSaver{row: row}
 	}
 }
 
@@ -88,8 +86,8 @@ func sleepForever() {
 	select {}
 }
 
-func insertEvents(ctx context.Context, in chan quicEvent, inserter *bigquery.Inserter, id int) {
-	rows := make([]quicEvent, 0)
+func insertEvents(ctx context.Context, in chan valueSaver, inserter *bigquery.Inserter, id int) {
+	rows := make([]valueSaver, 0)
 	ticker := time.NewTicker(tickDuration)
 	for range ticker.C {
 		for len(in) > 0 {
@@ -99,22 +97,27 @@ func insertEvents(ctx context.Context, in chan quicEvent, inserter *bigquery.Ins
 		if len(rows) > 0 {
 			log.Printf("[%d] Insert rows (size=%d)", id, len(rows))
 
-			err := inserter.Put(ctx, rows)
-			if err != nil {
-				log.Fatal(err)
+			if !dryRun {
+				err := inserter.Put(ctx, rows)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
-			rows = make([]quicEvent, 0)
+			rows = make([]valueSaver, 0)
 		}
 	}
 }
 
 func main() {
-	if len(os.Args) < 2 {
+	flag.BoolVar(&dryRun, "dry-run", false, "Do not insert values into BigQuery")
+	flag.Parse()
+
+	if len(flag.Args()) != 1 {
 		command := filepath.Base(os.Args[0])
-		fmt.Printf("usage: %s projectID.datasetID.tableID\n", command)
+		fmt.Printf("usage: %s [-dry-run] projectID.datasetID.tableID\n", command)
 		os.Exit(0)
 	}
-	parts := strings.Split(os.Args[1], ".")
+	parts := strings.Split(flag.Arg(0), ".")
 	projectID := parts[0]
 	datasetID := parts[1]
 	tableID := parts[2]
@@ -131,7 +134,7 @@ func main() {
 	inserter.IgnoreUnknownValues = true
 	inserter.SkipInvalidRows = false
 
-	ch := make(chan quicEvent, chanBufferSize)
+	ch := make(chan valueSaver, chanBufferSize)
 	defer close(ch)
 
 	seq := make([]int, numWorkers)

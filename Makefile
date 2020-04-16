@@ -22,9 +22,14 @@ statik/statik.go:
 h2olog-collector: statik/statik.go main.go
 	go build -v
 
-type.go:
-	extract_h2olog_schema.pl 'h2olog.quic' ~/ghq/github.com/toru/h2olog/h2olog > type.go
-	go fmt
+schema.sql: h2o-probes.d quicly-probes.d
+	./extract_h2olog_schema ../../toru/h2olog h2olog.quic $@
+
+h2o-probes.d:
+	curl -sL https://raw.githubusercontent.com/h2o/h2o/master/h2o-probes.d > $@
+
+quicly-probes.d:
+	curl -sL https://raw.githubusercontent.com/h2o/quicly/master/quicly-probes.d > $@
 
 clean:
 	rm -rf h2olog-collector statik

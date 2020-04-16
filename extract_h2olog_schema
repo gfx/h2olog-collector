@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+import sys
+import importlib.util
+from pathlib import Path
+from pprint import pprint
+from collections import OrderedDict
+
+def load_gen_bpf(h2olog_path):
+  spec = importlib.util.spec_from_file_location("gen_bpf", "%s/misc/gen-bpf.py" % h2olog_path)
+  module = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(module)
+  return module
+
+gen_bpf = None
+
+def c_to_bq_type(ctype):
+  if "*" in ctype: # ptr
+    return "string"
+  else:
+    return "int64"
+
+def gen_bq_ddl(context, table_name):
+  probe_metadata = context["probe_metadata"]
+
+  row_map = OrderedDict()
+  for name, metadata in probe_metadata.items():
+    fully_specified_probe_name = metadata["fully_specified_probe_name"]
+    block_field_set = gen_bpf.block_fields.get(fully_specified_probe_name, set())
+
+    for field_name, field_type in metadata["flat_args_map"].items():
+      if field_name in block_field_set:
+        continue
+      if "_len" in field_name:
+        continue
+      if "num_bytes" in field_name:
+        continue
+
+      row_name = gen_bpf.rename_map.get(field_name, field_name).replace("-", "_")
+      row = "`%s` %s" % (row_name, c_to_bq_type(field_type))
+      row_map[row] = None
+
+  return r"""
+create table `%s` (
+  `type` string,
+  %s
+);
+""" % (table_name, ",\n  ".join(row_map.keys()))
+
+def main():
+  global gen_bpf
+
+  try:
+    (_, h2olog_path, table_name, output_file) = sys.argv
+  except:
+    print("usage: extract_h2olog_schema h2olog_path table_name output_file")
+    sys.exit(1)
+
+  gen_bpf = load_gen_bpf(h2olog_path)
+  context = gen_bpf.prepare_context(".")
+  ddl = gen_bq_ddl(context, table_name=table_name)
+  Path(output_file).write_text(ddl)
+
+if __name__ == "__main__":
+  main()
