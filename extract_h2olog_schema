@@ -13,8 +13,10 @@ def load_gen_bpf(h2olog_path):
 
 gen_bpf = None
 
-def c_to_bq_type(ctype):
-  if "*" in ctype: # ptr
+def c_to_bq_type(row_name, ctype):
+  if row_name == "time":
+    return "timestamp"
+  elif "*" in ctype: # ptr
     return "string"
   else:
     return "int64"
@@ -36,7 +38,7 @@ def gen_bq_ddl(context, table_name):
         continue
 
       row_name = gen_bpf.rename_map.get(field_name, field_name).replace("-", "_")
-      row = "`%s` %s" % (row_name, c_to_bq_type(field_type))
+      row = "`%s` %s" % (row_name, c_to_bq_type(row_name, field_type))
       row_map[row] = None
 
   return r"""

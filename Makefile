@@ -22,7 +22,7 @@ statik/statik.go:
 h2olog-collector: statik/statik.go main.go
 	go build -v
 
-schema.sql: h2o-probes.d quicly-probes.d
+schema.sql: h2o-probes.d quicly-probes.d extract_h2olog_schema
 	./extract_h2olog_schema ../../toru/h2olog h2olog.quic $@
 
 h2o-probes.d:

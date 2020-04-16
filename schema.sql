@@ -2,7 +2,7 @@
 create table `h2olog.quic` (
   `type` string,
   `conn` int64,
-  `time` int64,
+  `time` timestamp,
   `version` int64,
   `dcid` string,
   `state` int64,
