@@ -23,7 +23,7 @@ import (
 
 const numWorkers = 16
 const chanBufferSize = 5000
-const tickDuration = 100 * time.Millisecond
+const tickDuration = 10 * time.Millisecond
 
 var dryRun bool
 
