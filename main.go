@@ -100,7 +100,7 @@ func insertEvents(ctx context.Context, in chan valueSaver, inserter *bigquery.In
 		}
 
 		if len(rows) > 0 {
-			log.Printf("[%d] Insert rows (size=%d)", id, len(rows))
+			log.Printf("[%02d] Insert rows (size=%d)", id, len(rows))
 
 			if !dryRun {
 				err := inserter.Put(ctx, rows)
