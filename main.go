@@ -26,6 +26,7 @@ const chanBufferSize = 5000
 const tickDuration = 10 * time.Millisecond
 
 var dryRun bool
+var debug bool
 
 type quicEvent = map[string]bigquery.Value
 
@@ -100,7 +101,9 @@ func insertEvents(ctx context.Context, in chan valueSaver, inserter *bigquery.In
 		}
 
 		if len(rows) > 0 {
-			log.Printf("[%02d] Insert rows (size=%d)", id, len(rows))
+			if debug {
+				log.Printf("[%02d] Insert rows (size=%d)", id, len(rows))
+			}
 
 			if !dryRun {
 				err := inserter.Put(ctx, rows)
@@ -115,6 +118,7 @@ func insertEvents(ctx context.Context, in chan valueSaver, inserter *bigquery.In
 
 func main() {
 	flag.BoolVar(&dryRun, "dry-run", false, "Do not insert values into BigQuery")
+	flag.BoolVar(&dryRun, "debug", false, "Emit debug logs to STDERR")
 	flag.Parse()
 
 	if len(flag.Args()) != 1 {
