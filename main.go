@@ -69,14 +69,19 @@ func readJSONLine(out chan valueSaver, reader io.Reader) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		var row quicEvent
-		json.Unmarshal([]byte(line), &row)
 
-		time := row["time"] // interface{}
-		if iv, ok := time.(int64); ok {
-			row["time"] = millisToTime(iv)
-		} else {
-			row["time"] = millisToTime(int64(time.(float64)))
+		d := json.NewDecoder(strings.NewReader(line))
+		d.UseNumber()
+		err := d.Decode(&row)
+		if err != nil {
+			log.Fatal(err)
 		}
+
+		iv, err := row["time"].(json.Number).Int64()
+		if err != nil {
+			log.Fatal(err)
+		}
+		row["time"] = millisToTime(iv)
 
 		out <- valueSaver{row: row}
 	}
