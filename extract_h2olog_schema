@@ -32,9 +32,7 @@ def gen_bq_ddl(context, table_name):
     for field_name, field_type in metadata["flat_args_map"].items():
       if field_name in block_field_set:
         continue
-      if "_len" in field_name:
-        continue
-      if "num_bytes" in field_name:
+      if field_name.endswith("_len"):
         continue
 
       row_name = gen_bpf.rename_map.get(field_name, field_name).replace("-", "_")
