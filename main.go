@@ -123,7 +123,7 @@ func main() {
 
 	if len(flag.Args()) != 1 {
 		command := filepath.Base(os.Args[0])
-		fmt.Printf("usage: %s [-dry-run] projectID.datasetID.tableID\n", command)
+		fmt.Printf("usage: %s [-dry-run] [-debug] projectID.datasetID.tableID\n", command)
 		os.Exit(0)
 	}
 	parts := strings.Split(flag.Arg(0), ".")
