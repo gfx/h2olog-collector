@@ -17,7 +17,7 @@ deps: statik/statik.go
 
 statik/statik.go:
 	go get github.com/rakyll/statik
-	statik -src=. -include='*.json'
+	go run github.com/rakyll/statik -src=. -include='*.json'
 
 h2olog-collector: statik/statik.go main.go
 	go build -v
@@ -32,5 +32,5 @@ quicly-probes.d:
 	curl -sL https://raw.githubusercontent.com/h2o/quicly/master/quicly-probes.d > $@
 
 clean:
-	rm -rf h2olog-collector statik
+	rm -rf h2olog-collector statik *.d
 .PHONEY: clean
