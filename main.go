@@ -35,7 +35,25 @@ type valueSaver struct {
 }
 
 func (vs valueSaver) Save() (row map[string]bigquery.Value, insertID string, err error) {
-	return vs.row, insertID, err
+	row = make(map[string]bigquery.Value)
+
+	for kebabKey, value := range vs.row {
+		camelKey := strings.ReplaceAll(kebabKey, "-", "_")
+
+		if strings.HasSuffix(camelKey, "_len") {
+			continue
+		}
+		row[camelKey] = value
+
+	}
+
+	iv, err := row["time"].(json.Number).Int64()
+	if err != nil {
+		log.Fatal(err)
+	}
+	row["time"] = millisToTime(iv)
+
+	return row, insertID, err
 }
 
 func millisToTime(millis int64) time.Time {
@@ -78,12 +96,6 @@ func readJSONLine(out chan valueSaver, reader io.Reader) {
 			log.Fatal(err)
 		}
 
-		iv, err := row["time"].(json.Number).Int64()
-		if err != nil {
-			log.Fatal(err)
-		}
-		row["time"] = millisToTime(iv)
-
 		out <- valueSaver{row: row}
 	}
 }
@@ -109,6 +121,15 @@ func insertEvents(ctx context.Context, in chan valueSaver, inserter *bigquery.In
 				err := inserter.Put(ctx, rows)
 				if err != nil {
 					log.Fatal(err)
+				}
+			} else {
+				for _, row := range rows {
+					v, _, _ := row.Save()
+					b, err := json.Marshal(v)
+					if err != nil {
+						log.Fatal(err)
+					}
+					log.Println(string(b))
 				}
 			}
 			rows = make([]valueSaver, 0)
@@ -140,7 +161,7 @@ func main() {
 	defer client.Close()
 
 	inserter := client.Dataset(datasetID).Table(tableID).Inserter()
-	inserter.IgnoreUnknownValues = true
+	inserter.IgnoreUnknownValues = false
 	inserter.SkipInvalidRows = false
 
 	ch := make(chan valueSaver, chanBufferSize)
