@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+# A utility to fetch quic-trace data from BigQuery table
+
+import os
+import json
+import sys
+from google.cloud import bigquery
+
+
+def main():
+    try:
+        (_, table_name, xid) = sys.argv
+    except:
+        print("usage: %s table_name xid" % sys.argv[0])
+        sys.exit(1)
+
+    query = r"""
+select *, unix_millis(time) as time_ms
+  from `{table_name}`
+  where conn in (
+    select conn
+    from `{table_name}`
+    where type = "send-response-header" and name = "xid" and value = "{xid}"
+  )
+  order by time asc;
+  """.format(table_name=table_name, xid=xid)
+
+    print("Extractiong xid = {xid} from {table_name} ...".format(
+        table_name=table_name, xid=xid), file=sys.stderr)
+
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./authn.json"
+    client = bigquery.Client()
+    query_job = client.query(query)
+
+    for row in query_job:
+        d = {camel2kebab(k): v for k, v in dict(row).items() if v is not None}
+        d["time"] = d["time-ms"]
+        del d["time-ms"]
+        print(json.dumps(d))
+
+    print("Done.", file=sys.stderr)
+
+
+def camel2kebab(s):
+    return s.replace("_", "-")
+
+
+if __name__ == "__main__":
+    main()
