@@ -42,6 +42,7 @@ def gen_bq_ddl(context, table_name):
   return r"""
 create table `%s` (
   `type` string,
+  `lost` int64, -- type="h2olog-event-lost"
   %s
 );
 """ % (table_name, ",\n  ".join(row_map.keys()))

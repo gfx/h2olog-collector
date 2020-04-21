@@ -1,6 +1,7 @@
 
 create table `h2olog.quic` (
   `type` string,
+  `lost` int64, -- type="h2olog-event-lost"
   `conn` int64,
   `time` timestamp,
   `version` int64,
