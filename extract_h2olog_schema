@@ -42,6 +42,7 @@ def gen_bq_ddl(context, table_name):
   return r"""
 create table `%s` (
   `type` string,
+  `time-nanosec` int64,
   `lost` int64, -- type="h2olog-event-lost"
   %s
 );
