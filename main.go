@@ -25,6 +25,8 @@ const numWorkers = 16
 const chanBufferSize = 5000
 const tickDuration = 10 * time.Millisecond
 
+var count uint64 = 0
+
 var dryRun bool
 var debug bool
 
@@ -35,25 +37,7 @@ type valueSaver struct {
 }
 
 func (vs valueSaver) Save() (row map[string]bigquery.Value, insertID string, err error) {
-	row = make(map[string]bigquery.Value)
-
-	for kebabKey, value := range vs.row {
-		camelKey := strings.ReplaceAll(kebabKey, "-", "_")
-
-		if strings.HasSuffix(camelKey, "_len") {
-			continue
-		}
-		row[camelKey] = value
-
-	}
-
-	iv, err := row["time"].(json.Number).Int64()
-	if err != nil {
-		log.Fatal(err)
-	}
-	row["time"] = millisToTime(iv)
-
-	return row, insertID, err
+	return vs.row, insertID, err
 }
 
 func millisToTime(millis int64) time.Time {
@@ -82,16 +66,44 @@ func clientOption() option.ClientOption {
 	return option.WithCredentialsJSON(json)
 }
 
+func decodeJSONLine(line string) (row quicEvent, err error) {
+	var rawEvent map[string]interface{}
+
+	decoder := json.NewDecoder(strings.NewReader(line))
+	decoder.UseNumber()
+	err = decoder.Decode(&rawEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	row = make(quicEvent)
+	for kebabKey, value := range rawEvent {
+		camelKey := strings.ReplaceAll(kebabKey, "-", "_")
+
+		if strings.HasSuffix(camelKey, "_len") {
+			continue
+		}
+		row[camelKey] = value
+	}
+
+	iv, err := row["time"].(json.Number).Int64()
+	if err != nil {
+		return nil, err
+	}
+	row["time"] = millisToTime(iv)
+
+	count += 1
+	row["ordering"] = count
+
+	return row, nil
+}
+
 func readJSONLine(out chan valueSaver, reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		var row quicEvent
-
-		d := json.NewDecoder(strings.NewReader(line))
-		d.UseNumber()
-		err := d.Decode(&row)
+		row, err := decodeJSONLine(line)
 		if err != nil {
 			log.Fatal(err)
 		}

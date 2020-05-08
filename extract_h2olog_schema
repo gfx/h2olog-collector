@@ -6,7 +6,7 @@ from pprint import pprint
 from collections import OrderedDict
 
 def load_gen_bpf(h2olog_path):
-  spec = importlib.util.spec_from_file_location("gen_bpf", "%s/misc/gen-bpf.py" % h2olog_path)
+  spec = importlib.util.spec_from_file_location("gen_bpf", "%s/misc/gen-quic-bpf.py" % h2olog_path)
   module = importlib.util.module_from_spec(spec)
   spec.loader.exec_module(module)
   return module
@@ -42,7 +42,7 @@ def gen_bq_ddl(context, table_name):
   return r"""
 create table `%s` (
   `type` string,
-  `time_nanosec` int64,
+  `ordering` int64, -- secondary odering number (primary is `time`)
   `lost` int64, -- type="h2olog-event-lost"
   %s
 );

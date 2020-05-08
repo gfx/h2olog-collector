@@ -1,7 +1,7 @@
 
 create table `h2olog.quic` (
   `type` string,
-  `time_nanosec` int64,
+  `ordering` int64, -- secondary odering number (primary is `time`)
   `lost` int64, -- type="h2olog-event-lost"
   `conn` int64,
   `time` timestamp,
