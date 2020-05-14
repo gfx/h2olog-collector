@@ -22,15 +22,9 @@ statik/statik.go:
 h2olog-collector: statik/statik.go main.go
 	go build -v
 
-schema: h2o-probes.d quicly-probes.d extract_h2olog_schema
+schema: extract_h2olog_schema
 	./extract_h2olog_schema ~/ghq/github.com/toru/h2olog h2olog.quic schema.sql
 .PHONY: schema
-
-h2o-probes.d:
-	curl -sL https://raw.githubusercontent.com/h2o/h2o/master/h2o-probes.d > $@
-
-quicly-probes.d:
-	curl -sL https://raw.githubusercontent.com/h2o/quicly/master/quicly-probes.d > $@
 
 test: h2olog-collector
 	timeout -s INT 1s ./h2olog-collector -dry-run -debug proj.h2olog.quic_test < test/test.jsonl || true
