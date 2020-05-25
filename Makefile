@@ -27,7 +27,7 @@ schema: extract_h2olog_schema
 .PHONY: schema
 
 test: h2olog-collector
-	timeout -s INT 1s ./h2olog-collector -dry-run -debug proj.h2olog.quic_test < test/test.jsonl || true
+	./h2olog-collector -dry-run -debug proj.h2olog.quic_test < test/test.jsonl
 .PHONY: test
 
 clean:

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -29,6 +30,7 @@ var count uint64 = 0
 
 var dryRun bool
 var debug bool
+var finished bool = false
 
 type quicEvent = map[string]bigquery.Value
 
@@ -92,7 +94,7 @@ func decodeJSONLine(line string) (row quicEvent, err error) {
 	}
 	row["time"] = millisToTime(iv)
 
-	count += 1
+	count++
 	row["ordering"] = count
 
 	return row, nil
@@ -112,15 +114,20 @@ func readJSONLine(out chan valueSaver, reader io.Reader) {
 	}
 }
 
-func sleepForever() {
-	select {}
-}
+func insertEvents(ctx context.Context, latch *sync.WaitGroup, in chan valueSaver, inserter *bigquery.Inserter, id int) {
+	latch.Add(1)
 
-func insertEvents(ctx context.Context, in chan valueSaver, inserter *bigquery.Inserter, id int) {
+	defer func() {
+		if debug {
+			log.Printf("[%02d] Worker is finished", id)
+		}
+		latch.Done()
+	}()
+
 	rows := make([]valueSaver, 0)
 	ticker := time.NewTicker(tickDuration)
 	for range ticker.C {
-		for len(in) > 0 {
+		for len(in) > 0 && len(rows) < chanBufferSize {
 			rows = append(rows, <-in)
 		}
 
@@ -141,17 +148,19 @@ func insertEvents(ctx context.Context, in chan valueSaver, inserter *bigquery.In
 					if err != nil {
 						log.Fatal(err)
 					}
-					log.Println(string(b))
+					log.Printf("[%02d] %s", id, string(b))
 				}
 			}
 			rows = make([]valueSaver, 0)
+		} else if finished {
+			break
 		}
 	}
 }
 
 func main() {
 	flag.BoolVar(&dryRun, "dry-run", false, "Do not insert values into BigQuery")
-	flag.BoolVar(&dryRun, "debug", false, "Emit debug logs to STDERR")
+	flag.BoolVar(&debug, "debug", false, "Emit debug logs to STDERR")
 	flag.Parse()
 
 	if len(flag.Args()) != 1 {
@@ -180,10 +189,13 @@ func main() {
 	defer close(ch)
 
 	seq := make([]int, numWorkers)
+	latch := &sync.WaitGroup{}
+
 	for i := range seq {
-		go insertEvents(ctx, ch, inserter, i+1)
+		go insertEvents(ctx, latch, ch, inserter, i+1)
 	}
 
 	readJSONLine(ch, os.Stdin)
-	sleepForever()
+	finished = true
+	latch.Wait()
 }
