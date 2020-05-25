@@ -115,8 +115,6 @@ func readJSONLine(out chan valueSaver, reader io.Reader) {
 }
 
 func insertEvents(ctx context.Context, latch *sync.WaitGroup, in chan valueSaver, inserter *bigquery.Inserter, id int) {
-	latch.Add(1)
-
 	defer func() {
 		if debug {
 			log.Printf("[%02d] Worker is finished", id)
@@ -192,6 +190,7 @@ func main() {
 	latch := &sync.WaitGroup{}
 
 	for i := range seq {
+		latch.Add(1)
 		go insertEvents(ctx, latch, ch, inserter, i+1)
 	}
 
