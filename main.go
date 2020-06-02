@@ -26,6 +26,8 @@ const numWorkers = 16
 const chanBufferSize = 5000
 const tickDuration = 10 * time.Millisecond
 
+var count uint64 = 0
+
 var dryRun bool
 var debug bool
 var finished bool = false
@@ -93,6 +95,9 @@ func decodeJSONLine(line string) (row quicEvent, err error) {
 		return nil, err
 	}
 	row["time"] = millisToTime(iv)
+
+	count++
+	row["ordering"] = count
 
 	return row, nil
 }
