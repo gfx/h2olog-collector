@@ -86,6 +86,8 @@ func decodeJSONLine(line string) (row quicEvent, err error) {
 		row[camelKey] = value
 	}
 
+	// "time" is stored as an epoch from 1970 in milliseconds,
+	// so here it is converted to `time.Time` object.
 	iv, err := row["time"].(json.Number).Int64()
 	if err != nil {
 		return nil, err
