@@ -81,10 +81,6 @@ func decodeJSONLine(line string) (row quicEvent, err error) {
 	row = make(quicEvent)
 	for kebabKey, value := range rawEvent {
 		camelKey := strings.ReplaceAll(kebabKey, "-", "_")
-
-		if strings.HasSuffix(camelKey, "_len") {
-			continue
-		}
 		row[camelKey] = value
 	}
 
