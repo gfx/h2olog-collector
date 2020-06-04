@@ -54,7 +54,8 @@ create table `%s` (
 
   `lost` int64, -- type="h2olog-event-lost"
   %s
-);
+)
+partition by date(`time`);
 """ % (table_name, ",\n  ".join(row_map.keys()))
 
 def main():
