@@ -1,7 +1,9 @@
 
 create table `h2olog.quic` (
   `type` string,
-  `ordering` int64, -- secondary odering number (primary is `time`)
+  `ordering` int64, -- a sequence number added by h2olog-collector
+  `seq` int64, -- a sequence number added by `h2olog`
+
   `lost` int64, -- type="h2olog-event-lost"
   `conn` int64,
   `time` timestamp,
