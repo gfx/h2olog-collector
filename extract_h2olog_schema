@@ -5,13 +5,6 @@ from pathlib import Path
 from pprint import pprint
 from collections import OrderedDict
 
-# redundant length
-ignore_field_set = set([
-  "token_len",
-  "name_len",
-  "value_len",
-])
-
 def load_gen_bpf(h2olog_path):
   spec = importlib.util.spec_from_file_location("gen_bpf", "%s/misc/gen-quic-bpf.py" % h2olog_path)
   module = importlib.util.module_from_spec(spec)
@@ -38,8 +31,6 @@ def gen_bq_ddl(context, table_name):
 
     for field_name, field_type in metadata["flat_args_map"].items():
       if field_name in block_field_set:
-        continue
-      if field_name in ignore_field_set:
         continue
 
       row_name = gen_bpf.rename_map.get(field_name, field_name).replace("-", "_")

@@ -54,6 +54,8 @@ create table `h2olog.quic` (
   `conn_id` int64,
   `req_id` int64,
   `name` string,
-  `value` string
+  `name_len` int64,
+  `value` string,
+  `value_len` int64
 )
 partition by date(`time`);
