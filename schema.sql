@@ -5,6 +5,8 @@ create table `h2olog.quic` (
   `seq` int64, -- a sequence number added by `h2olog`
 
   `lost` int64, -- type="h2olog-event-lost"
+
+  `first_octet` int64, -- first octet of quicly:receive#bytes
   `conn` int64,
   `time` timestamp,
   `version` int64,
