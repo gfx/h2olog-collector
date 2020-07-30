@@ -33,7 +33,7 @@ schema: extract_h2olog_schema
 .PHONY: schema
 
 test: build/h2olog-collector
-	./build/h2olog-collector -dry-run -debug proj.h2olog.quic_test < test/test.jsonl
+	for n in {1..20} ; do echo "Testing #$n" ; ./build/h2olog-collector -dry-run -debug proj.h2olog.quic_test < test/test.jsonl ; done
 .PHONY: test
 
 clean:

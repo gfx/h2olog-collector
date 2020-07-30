@@ -24,6 +24,7 @@ import (
 
 const numWorkers = 16
 const chanBufferSize = 5000
+const bigQueryInsertSize = 5000
 const tickDuration = 10 * time.Millisecond
 
 var count uint64 = 0
@@ -123,8 +124,12 @@ func insertEvents(ctx context.Context, latch *sync.WaitGroup, in chan valueSaver
 	rows := make([]valueSaver, 0)
 	ticker := time.NewTicker(tickDuration)
 	for range ticker.C {
-		for len(in) > 0 && len(rows) < chanBufferSize {
-			rows = append(rows, <-in)
+		for len(in) > 0 && len(rows) < bigQueryInsertSize {
+			select {
+			case row := <-in:
+				rows = append(rows, row)
+			default:
+			}
 		}
 
 		if len(rows) > 0 {
