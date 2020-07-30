@@ -3,33 +3,39 @@ CURRENT_REVISION = $(shell git rev-parse --short HEAD)
 BUILD_LDFLAGS = "-s -w -X main.revision=$(CURRENT_REVISION)"
 
 
-all: deps h2olog-collector
+all: deps build/h2olog-collector build.linux-amd64/h2olog-collector
 .PHONY: all
 
-release-linux: deps
-	GOOS=linux GOARCH=amd64 go build -o release/h2olog-collector
-.PHONY: release-linux
+build.linux-amd64/h2olog-collector: deps go.mod main.go
+	mkdir -p build.linux-amd64
+	GOOS=linux GOARCH=amd64 go build -o $@
+
+build/h2olog-collector: deps go.mod main.go
+	mkdir -p build
+	go build -o $@
 
 deps: statik/statik.go
-	go get -d
-	go mod tidy
+	go get -d -v
+	go mod tidy -v
 .PHONY: deps
+
+update-deps:
+	rm go.sum
+	go get -u -v
+	go mod tidy -v
 
 statik/statik.go:
 	go get github.com/rakyll/statik
 	go run github.com/rakyll/statik -src=. -include='*.json'
 
-h2olog-collector: statik/statik.go main.go
-	go build -v
-
 schema: extract_h2olog_schema
 	./extract_h2olog_schema ~/ghq/github.com/toru/h2olog h2olog.quic schema.sql
 .PHONY: schema
 
-test: h2olog-collector
-	./h2olog-collector -dry-run -debug proj.h2olog.quic_test < test/test.jsonl
+test: build/h2olog-collector
+	./build/h2olog-collector -dry-run -debug proj.h2olog.quic_test < test/test.jsonl
 .PHONY: test
 
 clean:
-	rm -rf h2olog-collector statik *.d
+	rm -rf build build.linux-amd64 statik *.d
 .PHONY: clean
