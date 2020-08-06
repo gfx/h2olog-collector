@@ -160,13 +160,15 @@ func insertEvents(ctx context.Context, latch *sync.WaitGroup, in chan valueSaver
 }
 
 func main() {
+	var strict bool
+	flag.BoolVar(&strict, "strict", false, "Turn IgnoreUnknownValues and SkipInvalidRows off")
 	flag.BoolVar(&dryRun, "dry-run", false, "Do not insert values into BigQuery")
 	flag.BoolVar(&debug, "debug", false, "Emit debug logs to STDERR")
 	flag.Parse()
 
 	if len(flag.Args()) != 1 {
 		command := filepath.Base(os.Args[0])
-		fmt.Printf("usage: %s [-dry-run] [-debug] projectID.datasetID.tableID\n", command)
+		fmt.Printf("usage: %s [-strict] [-dry-run] [-debug] projectID.datasetID.tableID\n", command)
 		os.Exit(0)
 	}
 	parts := strings.Split(flag.Arg(0), ".")
@@ -183,8 +185,8 @@ func main() {
 	defer client.Close()
 
 	inserter := client.Dataset(datasetID).Table(tableID).Inserter()
-	inserter.IgnoreUnknownValues = false
-	inserter.SkipInvalidRows = false
+	inserter.IgnoreUnknownValues = !strict
+	inserter.SkipInvalidRows = !strict
 
 	ch := make(chan valueSaver, chanBufferSize)
 	defer close(ch)
