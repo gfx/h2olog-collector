@@ -5,8 +5,14 @@ from pathlib import Path
 from pprint import pprint
 from collections import OrderedDict
 
-def load_gen_bpf(h2olog_path):
-  spec = importlib.util.spec_from_file_location("gen_bpf", "%s/misc/gen-quic-bpf.py" % h2olog_path)
+block_field_set = set([
+  "bytes",
+  "src",
+  "stateless_reset_token",
+])
+
+def load_gen_bpf(h2o_dir):
+  spec = importlib.util.spec_from_file_location("gen_bpf", "%s/src/h2olog/misc/gen-quic-bpf.py" % h2o_dir)
   module = importlib.util.module_from_spec(spec)
   spec.loader.exec_module(module)
   return module
@@ -27,9 +33,11 @@ def gen_bq_ddl(context, table_name):
   row_map = OrderedDict()
   for name, metadata in probe_metadata.items():
     fully_specified_probe_name = metadata["fully_specified_probe_name"]
-    block_field_set = gen_bpf.block_fields.get(fully_specified_probe_name, set())
+    original_block_field_set = gen_bpf.block_fields.get(fully_specified_probe_name, set())
 
     for field_name, field_type in metadata["flat_args_map"].items():
+      if field_name in original_block_field_set:
+        continue
       if field_name in block_field_set:
         continue
 
@@ -55,13 +63,14 @@ def main():
   global gen_bpf
 
   try:
-    (_, h2olog_path, table_name, output_file) = sys.argv
+    (_, h2o_dir, table_name, output_file) = sys.argv
   except:
-    print("usage: extract_h2olog_schema h2olog_path table_name output_file")
+    print("usage: extract_h2olog_schema h2o_dir table_name output_file")
     sys.exit(1)
 
-  gen_bpf = load_gen_bpf(h2olog_path)
-  context = gen_bpf.prepare_context(h2olog_path)
+  gen_bpf = load_gen_bpf(h2o_dir)
+
+  context = gen_bpf.prepare_context(Path(h2o_dir))
   ddl = gen_bq_ddl(context, table_name=table_name)
   Path(output_file).write_text(ddl)
 

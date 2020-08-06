@@ -29,7 +29,7 @@ statik/statik.go:
 	go run github.com/rakyll/statik -src=. -include='*.json'
 
 schema: extract_h2olog_schema
-	./extract_h2olog_schema ~/ghq/github.com/toru/h2olog h2olog.quic schema.sql
+	./extract_h2olog_schema ~/ghq/github.com/h2o/h2o h2olog.quic schema.sql
 .PHONY: schema
 
 test: build/h2olog-collector
