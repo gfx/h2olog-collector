@@ -61,6 +61,7 @@ create table `h2olog.quic` (
   `err` int64,
   `delta` int64,
   `capacity` int64,
+  `src_len` int64,
   `size` int64,
   `conn_id` int64,
   `req_id` int64,
