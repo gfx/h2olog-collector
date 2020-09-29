@@ -85,7 +85,6 @@ func decodeJSONLine(line string, createdAt time.Time) (row map[string]bigquery.V
 	// so here it is converted to `time.Time` object.
 	iv, err := rawEvent["time"].(json.Number).Int64()
 	if err == nil {
-		log.Println(err)
 		row["time"] = millisToTime(iv)
 	}
 	row["created_at"] = createdAt
