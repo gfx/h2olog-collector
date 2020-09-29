@@ -33,14 +33,14 @@ var dryRun bool
 var debug bool
 var finished bool = false
 
-type quicEvent = map[string]bigquery.Value
-
 type valueSaver struct {
-	row quicEvent
+	line string // a JSON string
+	createdAt time.Time
 }
 
 func (vs valueSaver) Save() (row map[string]bigquery.Value, insertID string, err error) {
-	return vs.row, insertID, err
+	row, err = decodeJSONLine(vs.line, vs.createdAt)
+	return row, insertID, err
 }
 
 func millisToTime(millis int64) time.Time {
@@ -69,7 +69,7 @@ func clientOption() option.ClientOption {
 	return option.WithCredentialsJSON(json)
 }
 
-func decodeJSONLine(line string) (row quicEvent, err error) {
+func decodeJSONLine(line string, createdAt time.Time) (row map[string]bigquery.Value, err error) {
 	var rawEvent map[string]interface{}
 
 	decoder := json.NewDecoder(strings.NewReader(line))
@@ -79,22 +79,19 @@ func decodeJSONLine(line string) (row quicEvent, err error) {
 		return nil, err
 	}
 
-	row = make(quicEvent)
-	for kebabKey, value := range rawEvent {
-		camelKey := strings.ReplaceAll(kebabKey, "-", "_")
-		row[camelKey] = value
-	}
+	row = make(map[string]bigquery.Value)
 
 	// "time" is stored as an epoch from 1970 in milliseconds,
 	// so here it is converted to `time.Time` object.
-	iv, err := row["time"].(json.Number).Int64()
-	if err != nil {
-		return nil, err
+	iv, err := rawEvent["time"].(json.Number).Int64()
+	if err == nil {
+		log.Println(err)
+		row["time"] = millisToTime(iv)
 	}
-	row["time"] = millisToTime(iv)
-
-	count++
-	row["ordering"] = count
+	row["created_at"] = createdAt
+	row["type"] = rawEvent["type"]
+	row["seq"] = rawEvent["seq"]
+	row["payload"] = line
 
 	return row, nil
 }
@@ -104,12 +101,7 @@ func readJSONLine(out chan valueSaver, reader io.Reader) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		row, err := decodeJSONLine(line)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		out <- valueSaver{row: row}
+		out <- valueSaver{line: line, createdAt: time.Now()}
 	}
 }
 
