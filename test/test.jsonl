@@ -1,0 +1,7 @@
+{"type":"receive","conn":1705735,"time":1588921623929,"dcid":"206255b2e3d534bfa9","bytes-len":33,"seq":1}
+{"type":"crypto-decrypt","conn":1705735,"time":1588921623929,"pn":3,"decrypted-len":5,"seq":2}
+{"type":"quictrace-recv","conn":1705735,"time":1588921623929,"pn":3,"seq":3}
+{"type":"quictrace-recv-ack","conn":1705735,"time":1588921623929,"ack-block-begin":5,"ack-block-end":6,"seq":4}
+{"type":"packet-acked","conn":1705735,"time":1588921623929,"pn":5,"is-late-ack":1,"seq":5}
+{"type":"packet-acked","conn":1705735,"time":1588921623929,"pn":6,"is-late-ack":1,"seq":6}
+{"type":"stream-acked","conn":1705735,"time":1588921623929,"stream-id":0,"off":0,"len":104,"seq":7}

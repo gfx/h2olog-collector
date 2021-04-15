@@ -4,7 +4,7 @@ statik/
 *.d
 
 # example input
-*.jsonl
+/*.jsonl
 
 # example output
 qtr
