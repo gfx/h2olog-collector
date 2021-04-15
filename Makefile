@@ -8,11 +8,11 @@ all: deps build/h2olog-collector build.linux-amd64/h2olog-collector
 
 build.linux-amd64/h2olog-collector: deps go.mod main.go
 	mkdir -p build.linux-amd64
-	GOOS=linux GOARCH=amd64 go build -o $@
+	GOOS=linux GOARCH=amd64 go build -v -o $@
 
 build/h2olog-collector: deps go.mod main.go
 	mkdir -p build
-	go build -o $@
+	go build -v -o $@
 
 deps:
 	go get -d -v
