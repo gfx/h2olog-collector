@@ -1,10 +1,9 @@
 h2olog-collector
 authn.json
-statik/
 *.d
 
 # example input
-*.jsonl
+/*.jsonl
 
 # example output
 qtr
