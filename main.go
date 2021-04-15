@@ -3,11 +3,11 @@ package main
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,10 +16,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/rakyll/statik/fs"
 	"google.golang.org/api/option"
-
-	_ "github.com/gfx/h2olog-collector/statik"
 )
 
 const numWorkers = 16
@@ -32,6 +29,9 @@ var count uint64 = 0
 var dryRun bool
 var debug bool
 var finished bool = false
+
+//go:embed authn.json
+var authnJson []byte;
 
 type valueSaver struct {
 	line string // a JSON string
@@ -50,23 +50,7 @@ func millisToTime(millis int64) time.Time {
 }
 
 func clientOption() option.ClientOption {
-	statikFs, err := fs.New()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	r, err := statikFs.Open("/authn.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer r.Close()
-
-	json, err := ioutil.ReadAll(r)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return option.WithCredentialsJSON(json)
+	return option.WithCredentialsJSON(authnJson)
 }
 
 func decodeJSONLine(line string, createdAt time.Time) (row map[string]bigquery.Value, err error) {

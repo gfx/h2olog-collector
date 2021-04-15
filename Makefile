@@ -14,7 +14,7 @@ build/h2olog-collector: deps go.mod main.go
 	mkdir -p build
 	go build -o $@
 
-deps: statik/statik.go
+deps:
 	go get -d -v
 	go mod tidy -v
 .PHONY: deps
@@ -23,10 +23,6 @@ update-deps:
 	rm go.sum
 	go get -u -v
 	go mod tidy -v
-
-statik/statik.go:
-	go get github.com/rakyll/statik
-	go run github.com/rakyll/statik -src=. -include='*.json'
 
 schema: extract_h2olog_schema
 	./extract_h2olog_schema ~/ghq/github.com/h2o/h2o h2olog.quic schema.sql
@@ -37,5 +33,5 @@ test: build/h2olog-collector
 .PHONY: test
 
 clean:
-	rm -rf build build.linux-amd64 statik *.d
+	rm -rf build build.linux-amd64 *.d
 .PHONY: clean
