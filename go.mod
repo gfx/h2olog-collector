@@ -5,7 +5,6 @@ go 1.16
 require (
 	cloud.google.com/go/bigquery v1.17.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/rakyll/statik v0.1.7
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210414194228-064579744ee0 // indirect
 	golang.org/x/oauth2 v0.0.0-20210413134643-5e61552d6c78 // indirect
@@ -13,5 +12,4 @@ require (
 	google.golang.org/api v0.44.0
 	google.golang.org/genproto v0.0.0-20210414175830-92282443c685 // indirect
 	google.golang.org/grpc v1.37.0 // indirect
-	honnef.co/go/tools v0.1.3 // indirect
 )
