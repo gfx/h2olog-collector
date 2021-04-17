@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/bigquery v1.17.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/hashicorp/golang-lru v0.5.1
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210414194228-064579744ee0 // indirect
 	golang.org/x/oauth2 v0.0.0-20210413134643-5e61552d6c78 // indirect

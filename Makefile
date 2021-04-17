@@ -35,6 +35,10 @@ test: build/h2olog-collector
 	done
 .PHONY: test
 
+test-single: build/h2olog-collector
+	./build/h2olog-collector -dry-run -debug -gcs test < test/test.jsonl
+.PHONY: test-single
+
 clean:
 	rm -rf build build.linux-amd64 *.d
 .PHONY: clean
