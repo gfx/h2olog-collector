@@ -19,7 +19,7 @@ jobs:
 
     - name: Build
       run: |
-        echo '{"type":"service_account"}' > authn.json
+        echo '{"type":"service_account","project_id":"dummy"}' > authn.json
         make
 
     - name: Test
