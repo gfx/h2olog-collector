@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	_ "embed"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
+	json "github.com/goccy/go-json"
 	"google.golang.org/api/option"
 )
 
